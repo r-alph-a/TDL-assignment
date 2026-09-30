@@ -1,16 +1,17 @@
-/**Hello Mr. Sarkis. I wanted to write you a quick message.
- * I am aware that some edge cases were not covered (like checking done while a task
- * is in the input stage) and also know that i haven't used the localStorage API that was
- * mentioned in the assignment pdf, but i didn't do these tasks because i felt that what we learned
- * last time wasn't enough to implement those features.
- * That being said i am happy to say that this assignment was made with no ai help (particullarly
- * the js part) and i hope you take this into consideration when grading.
- * Thank you.**/
-
 let list = document.querySelector("#tasks");
 let adder = document.querySelector('#add');
 
 let tasks = [];
+
+function save(){
+    const json = JSON.stringify(tasks);
+    localStorage.setItem('tasks', json);
+}
+
+function load(){
+    const raw = localStorage.getItem('tasks');
+    return JSON.parse(raw) || [];
+}
 
 //These 2 functions come from the course material
 function taskToListItem(task){      //Transform a js object to an li item
@@ -64,6 +65,7 @@ function taskToListItem(task){      //Transform a js object to an li item
 
 function renderTasks(){     //Render the tasks
     list.innerHTML = '';
+    load();
     tasks.map(taskToListItem).forEach(li => list.append(li));
 }
 
@@ -76,30 +78,36 @@ list.addEventListener('click', (e) => {         //testing for event listners
         let bu = e.target.closest('button');
         let buId = bu.dataset.id;
         const newTasks = tasks.filter(task => task.id !== buId);    
-        tasks = newTasks;         
+        tasks = newTasks; 
+        save();        
         renderTasks();      //we filter out the taks with the id and re-render the page
     } else if (e.target.closest('p')){
         let text = e.target.closest('p');
         let textId = text.dataset.id;
-        tasks[textId - 1].editing = true;
+        const index = tasks.findIndex(task => task.id === textId);  //finds the index of the selected task
+        tasks[index].editing = true;
         renderTasks();
     } else if (e.target.closest('input')) {
         let cb = e.target.closest('input');
         let cbId = cb.dataset.id;
         if (cb.type === "checkbox"){    //check that the input is a checkbox;
+            const index = tasks.findIndex(task => task.id === cbId);    //finds at what index the selected checbox is at
             if (cb.checked){        //if boxe is checked -> task is not done
-                tasks[cbId - 1].textStyle = 'line-through'; //id-1 because id doesn't represent the list's index
-                tasks[cbId - 1].done = true;    //set done as true and overline the task
+                tasks[index].textStyle = 'line-through'; 
+                tasks[index].done = true;       //set done and overline it
             } else {
-                tasks[cbId - 1].textStyle = '';
-                tasks[cbId - 1].done = false;   //set undone and return text to no style
+                tasks[index].textStyle = '';
+                tasks[index].done = false;   //set undone and return text to no style
             }
+            save();
             renderTasks();
         } else {    //here the user would have pressed the input to edit the tasks
             cb.addEventListener('keydown', (e) => {     //we check for the enter keydown event
                 if (e.key === 'Enter'){                 //in order to reload the page when the user is done
-                    tasks[cbId - 1].text = e.target.value;
-                    tasks[cbId - 1].editing = false;
+                    const index = tasks.findIndex(task => task.id === cbId);
+                    tasks[index].text = e.target.value;
+                    tasks[index].editing = false;
+                    save();
                     renderTasks();
                 }
             })
@@ -115,7 +123,10 @@ adder.addEventListener('click', (e) => {    //this listner is for the add button
     e.preventDefault();
     let index = String(tasks.length + 1);   //set it as string because we are comparing str to str in the delete function
     tasks.push({id:index, text:'', textStyle:"", done:false, editing: true});
+    save();
     renderTasks();
 })
 
+tasks = load();
+save();
 renderTasks();
